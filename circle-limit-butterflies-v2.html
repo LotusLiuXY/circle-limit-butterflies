@@ -44,6 +44,7 @@
 <div id="panel">
   <h1>蜉蝣圆极限 V2</h1>
   <div class="sub">Escher Circle Limit × 双曲 {p,q} 反射群镶嵌 · 测地线网格 · 全参数可调</div>
+  <div class="ni" style="margin-top:8px">配色预设（点击切换）· 蝴蝶形态见「翅膀」面板</div>
   <div class="presets" id="presets"></div>
   <h2>镶嵌 TILING</h2><div id="sec-tiling"></div>
   <h2>全局 GLOBAL</h2><div id="sec-global"></div>
@@ -117,8 +118,80 @@ const PRESETS = {
   neon:{name:"霓虹（深底）", cfg:{bg:"#0d0f18", geodesic:{show:true,width:0.7,opacity:0.30,color:"#5ad7ff"},
     face:{show:false,alternateFill:false,colors:["#121626","#0d0f18"]},
     stops:[{t:0.00,c:"#e9fbff",a:0.96},{t:0.28,c:"#5ad7ff",a:0.92},{t:0.55,c:"#7a5cff",a:0.92},
-           {t:0.78,c:"#ff4fa3",a:0.92},{t:1.00,c:"#241a3a",a:0.94}], stroke:"#0a0c14", altShade:26}}
+           {t:0.78,c:"#ff4fa3",a:0.92},{t:1.00,c:"#241a3a",a:0.94}], stroke:"#0a0c14", altShade:26}},
+  sakura:{name:"樱粉", cfg:{bg:"#fbf3f4", geodesic:{show:true,width:0.6,opacity:0.20,color:"#c98b9b"},
+    face:{show:true,alternateFill:true,colors:["#f6e3e8","#fcf4f6"]},
+    stops:[{t:0.00,c:"#fdf0f3",a:0.96},{t:0.28,c:"#f3c2d0",a:0.95},{t:0.55,c:"#e08aa6",a:0.95},
+           {t:0.78,c:"#b5567f",a:0.95},{t:1.00,c:"#7a2f53",a:0.96}], stroke:"#5e2740", altShade:24}},
+  dunhuang:{name:"敦煌", cfg:{bg:"#f3e9d6", geodesic:{show:true,width:0.7,opacity:0.24,color:"#9c5a2e"},
+    face:{show:true,alternateFill:true,colors:["#ecd9b8","#f7efe0"]},
+    stops:[{t:0.00,c:"#fbeecb",a:0.96},{t:0.30,c:"#e6b25a",a:0.95},{t:0.55,c:"#c8702f",a:0.95},
+           {t:0.78,c:"#9c4a2a",a:0.95},{t:1.00,c:"#5e2a1c",a:0.96}], stroke:"#4a2415", altShade:26}},
+  aurora:{name:"极光（深底）", cfg:{bg:"#0c1118", geodesic:{show:true,width:0.7,opacity:0.30,color:"#54e0c0"},
+    face:{show:false,alternateFill:false,colors:["#111a1f","#0c1118"]},
+    stops:[{t:0.00,c:"#e8fff6",a:0.96},{t:0.28,c:"#54e0c0",a:0.93},{t:0.55,c:"#3bb0e0",a:0.93},
+           {t:0.78,c:"#8a6cff",a:0.93},{t:1.00,c:"#2a1f4a",a:0.95}], stroke:"#0a1014", altShade:28}},
+  prussian:{name:"普鲁士蓝", cfg:{bg:"#eef1f5", geodesic:{show:true,width:0.6,opacity:0.20,color:"#3a5a8c"},
+    face:{show:true,alternateFill:true,colors:["#dde6f0","#f1f5f9"]},
+    stops:[{t:0.00,c:"#f2f7fb",a:0.96},{t:0.30,c:"#9fb8d6",a:0.95},{t:0.55,c:"#4f78ad",a:0.95},
+           {t:0.78,c:"#284f86",a:0.95},{t:1.00,c:"#142c52",a:0.96}], stroke:"#1a2944", altShade:22}},
+  sunset:{name:"落日", cfg:{bg:"#fdeee0", geodesic:{show:true,width:0.6,opacity:0.22,color:"#c25a3a"},
+    face:{show:true,alternateFill:true,colors:["#fae0cc","#fdf0e6"]},
+    stops:[{t:0.00,c:"#fff1da",a:0.96},{t:0.30,c:"#ffb066",a:0.95},{t:0.55,c:"#f07a3c",a:0.95},
+           {t:0.78,c:"#d24a6a",a:0.95},{t:1.00,c:"#7a2a55",a:0.96}], stroke:"#5e1f33", altShade:26}},
+  moss:{name:"苔绿", cfg:{bg:"#eef2e6", geodesic:{show:true,width:0.6,opacity:0.20,color:"#5e7152"},
+    face:{show:true,alternateFill:true,colors:["#dfe8d4","#f2f6ec"]},
+    stops:[{t:0.00,c:"#f4f8ec",a:0.95},{t:0.30,c:"#c2d3a4",a:0.94},{t:0.55,c:"#8aa46a",a:0.94},
+           {t:0.78,c:"#566f3e",a:0.94},{t:1.00,c:"#2f3d22",a:0.95}], stroke:"#2a331f", altShade:20}},
+  amethyst:{name:"紫晶", cfg:{bg:"#f3eef6", geodesic:{show:true,width:0.6,opacity:0.22,color:"#7a5a9c"},
+    face:{show:true,alternateFill:true,colors:["#e7dcef","#f6f0fa"]},
+    stops:[{t:0.00,c:"#f8f1fd",a:0.96},{t:0.30,c:"#cdb0e4",a:0.95},{t:0.55,c:"#9a6fd0",a:0.95},
+           {t:0.78,c:"#6a3fa0",a:0.95},{t:1.00,c:"#3a1f5e",a:0.96}], stroke:"#2e1a48", altShade:24}},
+  cloisonne:{name:"景泰蓝", cfg:{bg:"#f6f3ea", geodesic:{show:true,width:0.7,opacity:0.24,color:"#2f6f8f"},
+    face:{show:true,alternateFill:true,colors:["#e9eef0","#f7f5ee"]},
+    stops:[{t:0.00,c:"#eaf4f7",a:0.96},{t:0.30,c:"#5aa6c4",a:0.95},{t:0.55,c:"#2f6f8f",a:0.95},
+           {t:0.78,c:"#caa24a",a:0.95},{t:1.00,c:"#5e3f1c",a:0.96}], stroke:"#3a2a12", altShade:24}}
 };
+/* 蝴蝶形态：每种 18 个轮廓节点（前翅 8 + 后翅 10），无眼睛、头大身小 */
+const BUTTERFLIES = {
+  classic: defaultNodes(),
+  swallow: [ /* 燕尾尖翅 */
+    {x:0.045,y:-0.118,tangent:0.60},{x:0.200,y:-0.285,tangent:0.58},{x:0.420,y:-0.405,tangent:0.55},
+    {x:0.625,y:-0.345,tangent:0.55},{x:0.555,y:-0.165,tangent:0.58},{x:0.405,y:-0.030,tangent:0.60},
+    {x:0.230,y:0.040,tangent:0.60},{x:0.072,y:0.015,tangent:0.60},
+    {x:0.050,y:0.020,tangent:0.60},{x:0.215,y:0.060,tangent:0.58},{x:0.355,y:0.145,tangent:0.56},
+    {x:0.445,y:0.280,tangent:0.56},{x:0.400,y:0.450,tangent:0.55},{x:0.270,y:0.600,tangent:0.50},
+    {x:0.130,y:0.520,tangent:0.55},{x:0.045,y:0.320,tangent:0.60},{x:0.014,y:0.170,tangent:0.60},{x:0.024,y:0.055,tangent:0.60}],
+  round: [ /* 圆翼 */
+    {x:0.050,y:-0.100,tangent:0.62},{x:0.180,y:-0.225,tangent:0.60},{x:0.335,y:-0.295,tangent:0.58},
+    {x:0.455,y:-0.265,tangent:0.58},{x:0.450,y:-0.145,tangent:0.60},{x:0.340,y:-0.030,tangent:0.62},
+    {x:0.205,y:0.030,tangent:0.62},{x:0.072,y:0.012,tangent:0.62},
+    {x:0.050,y:0.020,tangent:0.62},{x:0.195,y:0.050,tangent:0.60},{x:0.315,y:0.120,tangent:0.58},
+    {x:0.375,y:0.245,tangent:0.58},{x:0.300,y:0.375,tangent:0.58},{x:0.175,y:0.405,tangent:0.58},
+    {x:0.072,y:0.325,tangent:0.60},{x:0.022,y:0.205,tangent:0.62},{x:0.012,y:0.115,tangent:0.62},{x:0.024,y:0.050,tangent:0.62}],
+  broad: [ /* 宽翼 */
+    {x:0.045,y:-0.130,tangent:0.60},{x:0.205,y:-0.300,tangent:0.58},{x:0.405,y:-0.420,tangent:0.55},
+    {x:0.560,y:-0.360,tangent:0.55},{x:0.545,y:-0.185,tangent:0.58},{x:0.405,y:-0.050,tangent:0.60},
+    {x:0.235,y:0.050,tangent:0.60},{x:0.075,y:0.020,tangent:0.60},
+    {x:0.050,y:0.020,tangent:0.60},{x:0.215,y:0.070,tangent:0.58},{x:0.365,y:0.160,tangent:0.56},
+    {x:0.445,y:0.325,tangent:0.56},{x:0.355,y:0.505,tangent:0.55},{x:0.205,y:0.555,tangent:0.55},
+    {x:0.085,y:0.445,tangent:0.58},{x:0.025,y:0.275,tangent:0.60},{x:0.012,y:0.145,tangent:0.60},{x:0.024,y:0.055,tangent:0.60}],
+  slender: [ /* 纤翅 */
+    {x:0.040,y:-0.095,tangent:0.60},{x:0.155,y:-0.205,tangent:0.58},{x:0.310,y:-0.275,tangent:0.56},
+    {x:0.440,y:-0.245,tangent:0.56},{x:0.430,y:-0.130,tangent:0.58},{x:0.315,y:-0.034,tangent:0.60},
+    {x:0.185,y:0.030,tangent:0.60},{x:0.060,y:0.012,tangent:0.60},
+    {x:0.043,y:0.016,tangent:0.60},{x:0.167,y:0.045,tangent:0.58},{x:0.282,y:0.106,tangent:0.56},
+    {x:0.342,y:0.213,tangent:0.56},{x:0.268,y:0.325,tangent:0.56},{x:0.142,y:0.348,tangent:0.56},
+    {x:0.052,y:0.278,tangent:0.58},{x:0.016,y:0.178,tangent:0.60},{x:0.008,y:0.093,tangent:0.60},{x:0.018,y:0.042,tangent:0.60}],
+  angular: [ /* 三角翼 */
+    {x:0.045,y:-0.100,tangent:0.58},{x:0.165,y:-0.225,tangent:0.52},{x:0.345,y:-0.305,tangent:0.50},
+    {x:0.585,y:-0.305,tangent:0.50},{x:0.505,y:-0.120,tangent:0.55},{x:0.345,y:-0.020,tangent:0.58},
+    {x:0.205,y:0.040,tangent:0.58},{x:0.072,y:0.020,tangent:0.60},
+    {x:0.050,y:0.020,tangent:0.58},{x:0.185,y:0.060,tangent:0.52},{x:0.305,y:0.135,tangent:0.50},
+    {x:0.465,y:0.275,tangent:0.50},{x:0.305,y:0.405,tangent:0.52},{x:0.155,y:0.465,tangent:0.52},
+    {x:0.062,y:0.345,tangent:0.55},{x:0.020,y:0.205,tangent:0.58},{x:0.012,y:0.112,tangent:0.58},{x:0.024,y:0.052,tangent:0.58}]
+};
+
 const config = {
   tiling: {
     symmetryP: 6,            // {p,q} 旋转对称阶
@@ -161,7 +234,8 @@ const config = {
     veins: { show:true, width:0.7 },
     light: { angle:128, intensity:0.26 },
     strokeWidth: 1.1,
-    nodes: defaultNodes()    // 18 个轮廓控制节点
+    nodes: defaultNodes(),   // 18 个轮廓控制节点（前翅 8 + 后翅 10）
+    butterfly: "classic"     // 蝴蝶形态：classic | swallow | round | broad | slender | angular
   },
   color: {
     stops: PRESETS.escher.cfg.stops.map(s=>({...s})),
@@ -601,6 +675,9 @@ select(sM,"层叠顺序",config.butterfly,"layerOrder",[["smallTop","小在上"]
 select(sM,"朝向",config.butterfly,"orient",[["tangent","切向"],["radial","径向"],["mixed","交替"]]);
 check(sM,"镜像翻转",config.butterfly,"mirror");
 
+select(sW,"蝴蝶形态",config.wing,"butterfly",
+  [["classic","标准圆润"],["swallow","燕尾尖翅"],["round","圆翼"],["broad","宽翼"],["slender","纤翅"],["angular","三角翼"]],
+  ()=>{ config.wing.nodes=BUTTERFLIES[config.wing.butterfly].map(n=>({...n})); selNode=Math.min(selNode,config.wing.nodes.length-1); nodeSliders(); drawNodeEditor(); sprites.clear(); });
 slider(sW,"翅膀基准角°",config.wing,"angle",-30,30,1,rebuild);
 slider(sW,"翅膀缩放",config.wing,"scale",0.6,1.5,0.01,rebuild);
 slider(sW,"纹理密度",config.wing,"textureDensity",0,1,0.01,rebuild);
@@ -701,7 +778,7 @@ ncv.addEventListener("pointermove",e=>{
 });
 ncv.addEventListener("pointerup",()=>dragging=false);
 document.getElementById("resetWing").addEventListener("click",()=>{
-  config.wing.nodes=defaultNodes();nodeSliders();drawNodeEditor();sprites.clear();
+  config.wing.nodes=BUTTERFLIES[config.wing.butterfly].map(n=>({...n}));nodeSliders();drawNodeEditor();sprites.clear();
 });
 document.getElementById("randomize").addEventListener("click",()=>{
   const rng=mulberry32(Date.now()&0xffffff);
