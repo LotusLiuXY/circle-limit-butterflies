@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>蜉蝣圆极限 · Circle Limit Butterflies</title>
+<style>
+  :root{
+    --bg:#f4f1ea; --panel:#ffffff; --ink:#2b2a26; --sub:#8a857a;
+    --line:#e5e0d4; --accent:#b3542e; --accent2:#4a6b5a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden;font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
+  #stage{position:fixed;inset:0 340px 0 0;z-index:0}
+  #cv{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #panel{position:fixed;top:0;right:0;bottom:0;width:340px;background:var(--panel);border-left:1px solid var(--line);overflow-y:auto;padding:14px 16px 40px;z-index:10}
+  h1{font-size:15px;font-weight:700;letter-spacing:.5px;margin-bottom:2px}
+  .sub{font-size:11px;color:var(--sub);margin-bottom:10px}
+  h2{font-size:12px;font-weight:700;color:var(--accent2);margin:14px 0 6px;padding-bottom:3px;border-bottom:1px solid var(--line);letter-spacing:1px}
+  .row{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:11px}
+  .row label{flex:0 0 108px;color:#555}
+  .row input[type=range]{flex:1;accent-color:var(--accent);height:14px}
+  .row .val{flex:0 0 44px;text-align:right;font-variant-numeric:tabular-nums;color:#333;font-size:10.5px}
+  .row select,.row input[type=color]{flex:1;border:1px solid var(--line);border-radius:4px;padding:2px 4px;font-size:11px;background:#faf9f5}
+  .row input[type=checkbox]{accent-color:var(--accent)}
+  .stop{display:flex;align-items:center;gap:6px;margin:3px 0;font-size:10.5px}
+  .stop input[type=color]{width:34px;height:20px;padding:0;border:1px solid var(--line);border-radius:3px}
+  .stop input[type=range]{flex:1;accent-color:var(--accent2)}
+  .stop .t{flex:0 0 36px;color:var(--sub)}
+  #nodeCv{width:100%;background:#faf9f5;border:1px solid var(--line);border-radius:6px;cursor:crosshair;touch-action:none}
+  .nodeInfo{font-size:10.5px;color:var(--sub);margin:4px 0}
+  .btn{display:inline-block;border:1px solid var(--line);background:#faf9f5;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;margin:4px 6px 0 0}
+  .btn:hover{border-color:var(--accent);color:var(--accent)}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="cv"></canvas></div>
+<div id="panel">
+  <h1>蜉蝣圆极限 · Circle Limit</h1>
+  <div class="sub">埃舍尔《蝴蝶》× 双曲测地线对称 · 可调参可视化</div>
+  <h2>全局 GLOBAL</h2><div id="sec-global"></div>
+  <h2>运动 MOTION</h2><div id="sec-motion"></div>
+  <h2>翅膀 WING</h2><div id="sec-wing"></div>
+  <h2>配色 COLOR</h2><div id="sec-color"></div>
+  <h2>翅膀轮廓节点编辑（<span id="nodeCount"></span> 节点）</h2>
+  <div class="nodeInfo">单击选中节点 · 拖拽移动 · 下方微调坐标与切线（贝塞尔平滑）</div>
+  <canvas id="nodeCv" width="300" height="300"></canvas>
+  <div id="sec-node"></div>
+  <button class="btn" id="resetWing">重置翅膀轮廓</button>
+  <button class="btn" id="randomize">随机形态</button>
+</div>
+
+<script>
+/* ============================================================
+   单一 config 对象 —— 全部参数集中于此
+   命名: wing.nodes[i].x / .y / .tangent, wing.angle, wing.scale,
+         color.stops[] ...
+   ============================================================ */
+function defaultNodes(){
+  return [
+    /* 右前翅 forewing 8 节点（闭合轮廓）*/
+    {x:0.045,y:-0.115,tangent:0.6},
+    {x:0.175,y:-0.250,tangent:0.6},
+    {x:0.360,y:-0.335,tangent:0.55},
+    {x:0.520,y:-0.300,tangent:0.6},
+    {x:0.505,y:-0.160,tangent:0.6},
+    {x:0.370,y:-0.040,tangent:0.6},
+    {x:0.215,y:0.035,tangent:0.6},
+    {x:0.070,y:0.015,tangent:0.6},
+    /* 右后翅 hindwing 10 节点（闭合轮廓）*/
+    {x:0.050,y:0.020,tangent:0.6},
+    {x:0.195,y:0.055,tangent:0.6},
+    {x:0.330,y:0.130,tangent:0.55},
+    {x:0.400,y:0.265,tangent:0.6},
+    {x:0.310,y:0.400,tangent:0.6},
+    {x:0.165,y:0.430,tangent:0.55},
+    {x:0.060,y:0.345,tangent:0.6},
+    {x:0.018,y:0.220,tangent:0.6},
+    {x:0.008,y:0.115,tangent:0.6},
+    {x:0.020,y:0.050,tangent:0.6}
+  ];
+}
+const SCHEMES = {
+  escher:  {name:"埃舍尔经典", stops:[{t:0.00,c:"#f3ead2",a:0.97},{t:0.28,c:"#d98e3f",a:0.95},{t:0.55,c:"#a63b2a",a:0.95},{t:0.78,c:"#5b6650",a:0.94},{t:1.00,c:"#8fa3b5",a:0.95}]},
+  morandi: {name:"暮色莫兰迪", stops:[{t:0.00,c:"#e8e2d6",a:0.95},{t:0.30,c:"#c2a8a0",a:0.92},{t:0.55,c:"#9a8f9e",a:0.92},{t:0.78,c:"#7d8a83",a:0.92},{t:1.00,c:"#5d6b74",a:0.93}]},
+  celadon: {name:"青瓷",       stops:[{t:0.00,c:"#f0f4ec",a:0.95},{t:0.30,c:"#bcd3c5",a:0.93},{t:0.55,c:"#7fa893",a:0.93},{t:0.78,c:"#4f7d6d",a:0.93},{t:1.00,c:"#33544c",a:0.94}]},
+  vermilion:{name:"赤金",      stops:[{t:0.00,c:"#f7e8c8",a:0.96},{t:0.30,c:"#e9b84d",a:0.94},{t:0.55,c:"#c65b2e",a:0.94},{t:0.78,c:"#8e2f26",a:0.94},{t:1.00,c:"#4a1d1c",a:0.95}]},
+  inkwash: {name:"水墨",       stops:[{t:0.00,c:"#f6f5f1",a:0.92},{t:0.30,c:"#c9c7c0",a:0.88},{t:0.55,c:"#8f8d86",a:0.88},{t:0.78,c:"#54524d",a:0.90},{t:1.00,c:"#26251f",a:0.93}]}
+};
+const config = {
+  scene: {
+    count: 96,              // 蝴蝶数量
+    symmetryP: 8,           // p：旋转对称阶
+    symmetryQ: 6,           // q：双曲 {p,q} 对称群参数
+    rotationDeg: 12,        // 整体旋转角度
+    boundaryRadius: 0.96,   // 圆极限边界（曲率半径映射，占半边比）
+    bgColor: "#111009",     // 圆盘底色
+    colorMode: "byRing",    // 颜色分布: byRing | byAngle | mixed | mono
+    hueSpread: 96           // 颜色分布色相跨度
+  },
+  butterfly: {
+    sizePct: 0.035,         // 蝴蝶大小（屏幕宽度百分比 2%–5%）
+    minPx: 34,              // 最小像素，确保清晰可见
+    opacity: 0.96,          // 基础透明度
+    speed: 0.55,            // 飞行速度（循环倍率）
+    loopDuration: 18,       // 循环动画时长（秒）
+    displacement: 7,        // 位移范围（px，围绕测地线驻点漂移）
+    flapSpeed: 1.6,         // 振翅频率
+    spreadAngle: 6,         // 翅膀展开角度（度）
+    mirror: false,          // 镜像翻转
+    layerOrder: "outerTop", // 层叠顺序: outerTop | innerTop
+    spawnRate: 0.85         // 出现频率/数量（可见比例）
+  },
+  wing: {
+    angle: -8,              // 翅膀基准角（相对躯干，度）
+    scale: 1.0,             // 翅膀相对躯干缩放
+    textureDensity: 0.5,    // 翅膀纹理密度 0–1
+    veins: { show: true, width: 0.7 },  // 脉络显隐与粗细
+    light: { angle: 130, intensity: 0.28 }, // 光影角度/强度
+    strokeWidth: 1.1,       // 边缘描边宽度
+    nodes: defaultNodes()   // 18 个轮廓控制节点 {x,y,tangent}
+  },
+  color: {
+    scheme: "escher",
+    stops: SCHEMES.escher.stops.map(s=>({...s})),  // 多段渐变色标（≥4）
+    backHueShift: 18,       // 正反面色差：后(反)翅色相偏移
+    backAlpha: -0.06,       // 反翅透明度差
+    backLight: -12,         // 反翅明度差
+    strokeColor: "#241f18"
+  }
+};
+/* ============================================================ */
+
+const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+let W=0,H=0,CX=0,CY=0,diskR=0;
+let rings=[], butterflies=[], sprites=new Map(), seedBases=[];
+const TAU = Math.PI*2;
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+function acosh(x){return Math.log(x+Math.sqrt(x*x-1))}
+
+/* ---- 双曲 {p,q} 环带布局：沿测地线圆分层，按共形因子缩放 ---- */
+function layout(){
+  const p=clamp(Math.round(config.scene.symmetryP),3,16);
+  const q=clamp(Math.round(config.scene.symmetryQ),3,16);
+  const c=Math.cos(Math.PI/q)/Math.sin(Math.PI/p);
+  const vStep = c>1.0001 ? Math.atanh(Math.tanh(acosh(c)/2)) : 0.28;
+  const sizePx = butterflyPx();
+  rings=[]; let total=0, k=1;
+  while(total<config.scene.count && k<=14){
+    const re=Math.tanh(k*vStep);
+    const Rpx=re*diskR;
+    let n=Math.max(1,Math.round(p*k));
+    const maxN=Math.max(1,Math.floor(TAU*Math.max(Rpx,8)/(sizePx*1.28)));
+    n=Math.min(n,maxN);
+    rings.push({k,re,n,angOff:mulberry32(k*77)()*TAU});
+    total+=n; k++;
+  }
+  butterflies=[];
+  const rng=mulberry32(20260828);
+  rings.forEach(r=>{
+    for(let j=0;j<r.n;j++){
+      const ang=TAU*j/r.n+r.angOff;
+      butterflies.push({
+        re:r.re, ang, ring:r.k,
+        ph1:rng()*TAU, ph2:rng()*TAU, ph3:rng()*TAU,
+        hueSeed:rng()
+      });
+    }
+  });
+  seedBases=flutter();
+}
+function butterflyPx(){
+  return clamp(config.butterfly.sizePct*Math.min(W, H*1.4), config.butterfly.minPx, 220);
+}
+
+/* ---- 蝴蝶轮廓：Catmull-Rom(切线权重)→贝塞尔平滑闭合路径 ---- */
+function tracePath(c2d,nodes,S,ox,oy,sx,sy){
+  const pts=nodes.map(n=>({x:ox+n.x*S*sx, y:oy+n.y*S*sy}));
+  const n=pts.length;
+  c2d.beginPath(); c2d.moveTo(pts[0].x,pts[0].y);
+  for(let i=0;i<n;i++){
+    const p0=pts[(i-1+n)%n], p1=pts[i], p2=pts[(i+1)%n], p3=pts[(i+2)%n];
+    const t1=clamp(p1.tangent??0.6,0.05,1.2)/6, t2=clamp(p2.tangent??0.6,0.05,1.2)/6;
+    c2d.bezierCurveTo(
+      p1.x+(p2.x-p0.x)*t1, p1.y+(p2.y-p0.y)*t1,
+      p2.x-(p3.x-p1.x)*t2, p2.y-(p3.y-p1.y)*t2,
+      p2.x,p2.y);
+  }
+  c2d.closePath();
+}
+function shade(hex,dl){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)&255,g=(n>>8)&255,b=n&255;
+  r=clamp(Math.round(r+dl*2.2),0,255);g=clamp(Math.round(g+dl*2.2),0,255);b=clamp(Math.round(b+dl*2.2),0,255);
+  return `rgb(${r},${g},${b})`;
+}
+
+/* ---- 预渲染蝴蝶精灵（离屏缓存，色相量化）---- */
+const S=300;
+function spriteFor(hueKey){
+  if(sprites.has(hueKey)) return sprites.get(hueKey);
+  const c=document.createElement("canvas"); c.width=c.height=S;
+  const g=c.getContext("2d");
+  const w=config.wing, col=config.color;
+  const base=col.stops;
+  const back=base.map(s=>{
+    const n=parseInt(s.c.slice(1),16);
+    let r=(n>>16)&255,gg=(n>>8)&255,b=n&255;
+    const rad=col.backHueShift*Math.PI/180, cos=Math.cos(rad), sin=Math.sin(rad);
+    const lum=0.299*r+0.587*gg+0.114*b;
+    r=clamp(Math.round(lum+(r-lum)*cos-((b-gg)/Math.sqrt(3))*sin),0,255);
+    gg=clamp(Math.round(lum+(gg-lum)*cos-((r-b)/Math.sqrt(3))*sin),0,255);
+    b=clamp(Math.round(lum+(b-lum)*cos-((gg-r)/Math.sqrt(3))*sin),0,255);
+    return {t:s.t,a:clamp(s.a+col.backAlpha,0.05,1),c:`rgb(${r},${gg},${b})`};
+  });
+  const spread=w.angle*Math.PI/180 + config.butterfly.spreadAngle*Math.PI/180;
+  function grad(list){
+    const gr=g.createLinearGradient(0.05*S,-0.42*S,0.05*S,0.46*S);
+    list.forEach(s=>gr.addColorStop(clamp(s.t,0,1), hexA(s.c,s.a)));
+    return gr;
+  }
+  function hexA(c,a){
+    if(c.startsWith("rgb(")) return c.replace("rgb(","rgba(").replace(")",`,${a})`);
+    const n=parseInt(c.slice(1),16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  }
+  function drawWing(nodes,side,fill,rot){
+    g.save();
+    g.translate(S/2,S*0.06);
+    g.rotate(rot*side);
+    g.scale(side* w.scale, w.scale);
+    tracePath(g,nodes,S,0,0,1,1);
+    g.fillStyle=fill; g.fill();
+    /* 脉络 */
+    if(config.wing.veins.show){
+      g.save(); g.clip();
+      g.strokeStyle="rgba(30,25,18,0.55)"; g.lineWidth=config.wing.veins.width;
+      const bx=0.02*S, by=-0.06*S;
+      for(let i=2;i<nodes.length;i+=3){
+        const nx=nodes[i].x*S, ny=nodes[i].y*S;
+        g.beginPath(); g.moveTo(bx,by);
+        g.quadraticCurveTo((bx+nx)/2+(ny-by)*0.18,(by+ny)/2-(nx-bx)*0.18, nx*0.96, ny*0.96);
+        g.stroke();
+      }
+      /* 纹理：斑点密度 */
+      const rng=mulberry32(hueKey*97+13);
+      const dots=Math.round(config.wing.textureDensity*90);
+      for(let i=0;i<dots;i++){
+        const dx=(rng()*0.62-0.03)*S, dy=(rng()*0.95-0.42)*S, rr=(0.006+rng()*0.016)*S;
+        g.beginPath(); g.arc(dx,dy,rr,0,TAU);
+        g.fillStyle= rng()>0.5 ? "rgba(25,20,14,0.5)" : "rgba(250,246,232,0.75)";
+        g.fill();
+      }
+      g.restore();
+    }
+    /* 光影 */
+    if(config.wing.light.intensity>0.01){
+      g.save(); g.clip();
+      const la=config.wing.light.angle*Math.PI/180;
+      const lg=g.createLinearGradient(S/2+Math.cos(la)*S,-S/2+Math.sin(la)*S,S/2-Math.cos(la)*S,S/2+Math.sin(la)*S*0.2);
+      lg.addColorStop(0,`rgba(255,252,240,${config.wing.light.intensity})`);
+      lg.addColorStop(1,`rgba(10,8,5,${config.wing.light.intensity*0.9})`);
+      g.fillStyle=lg; g.fillRect(0,0,S,S);
+      g.restore();
+    }
+    /* 描边 */
+    tracePath(g,nodes,S,0,0,1,1);
+    g.strokeStyle=config.color.strokeColor; g.lineWidth=config.wing.strokeWidth; g.stroke();
+    g.restore();
+  }
+  const fore=()=>config.wing.nodes.slice(0,8), hind=()=>config.wing.nodes.slice(8);
+  /* 后(反)翅先画 */
+  drawWing(hind(), 1, grad(back), spread*0.72);
+  drawWing(hind(),-1, grad(back), spread*0.72);
+  drawWing(fore(), 1, grad(base), spread);
+  drawWing(fore(),-1, grad(base), spread);
+  /* 躯干：头大身小 · 无眼睛 */
+  g.save(); g.translate(S/2,S*0.06);
+  g.fillStyle=shade(config.color.strokeColor,18);
+  g.beginPath(); g.ellipse(0,0.10*S,0.026*S,0.150*S,0,0,TAU); g.fill();      // 腹
+  g.beginPath(); g.ellipse(0,-0.075*S,0.033*S,0.075*S,0,0,TAU); g.fill();    // 胸
+  g.beginPath(); g.arc(0,-0.155*S,0.050*S,0,TAU); g.fill();                   // 头(大)
+  g.strokeStyle="rgba(30,25,18,0.8)"; g.lineWidth=0.008*S;                    // 触角(非眼睛)
+  g.beginPath(); g.moveTo(-0.02*S,-0.19*S); g.quadraticCurveTo(-0.09*S,-0.30*S,-0.15*S,-0.315*S); g.stroke();
+  g.beginPath(); g.moveTo(0.02*S,-0.19*S); g.quadraticCurveTo(0.09*S,-0.30*S,0.15*S,-0.315*S); g.stroke();
+  g.restore();
+  sprites.set(hueKey,c);
+  return c;
+}
+
+/* ---- 颜色分布 → 精灵色相键 ---- */
+function hueKeyFor(b,idx){
+  const m=config.scene.colorMode, spread=config.scene.hueSpread;
+  if(m==="mono") return 0;
+  if(m==="byRing") return Math.round((b.ring*spread/6)%360);
+  if(m==="byAngle") return Math.round(((b.ang/TAU)*spread+360)%360);
+  return Math.round(b.hueSeed*spread);
+}
+
+/* ---- 主渲染 ---- */
+function render(t){
+  ctx.clearRect(0,0,W,H);
+  /* 圆极限边界 */
+  ctx.save();
+  ctx.translate(CX,CY);
+  ctx.beginPath(); ctx.arc(0,0,diskR/config.scene.boundaryRadius,0,TAU);
+  ctx.fillStyle=config.scene.bgColor; ctx.fill();
+  ctx.restore();
+  ctx.save();
+  ctx.translate(CX,CY);
+  ctx.rotate(config.scene.rotationDeg*Math.PI/180);
+
+  const order=[...butterflies.keys()];
+  order.sort((a,b)=>{
+    const A=butterflies[a],B=butterflies[b];
+    return config.butterfly.layerOrder==="outerTop" ? B.re-A.re : A.re-B.re;
+  });
+  const sizePx=butterflyPx(), T=config.butterfly.loopDuration, tt=t*0.001;
+  for(const idx of order){
+    const b=butterflies[idx];
+    const re=b.re, Rpx=re*diskR;
+    const drift=config.butterfly.displacement;
+    const phase=tt*config.butterfly.speed/T;
+    const dx=Math.sin(TAU*phase+b.ph1)*drift*0.8;
+    const dy=Math.cos(TAU*phase*0.83+b.ph2)*drift*0.55;
+    const dRe=clamp(re+dy/Math.max(diskR,1),0,0.965);
+    const rr=dRe*diskR;
+    const aa=b.ang+dx/Math.max(rr,20);
+    /* 面向切线方向（沿测地线），自然姿态 */
+    const rot=aa+Math.PI/2 + Math.sin(TAU*phase+b.ph3)*0.07;
+    const flap=Math.sin(TAU*tt*config.butterfly.flapSpeed+b.ph2);
+    const sy=1-0.11*(flap*0.5+0.5);
+    /* 出现频率/透明度 */
+    const vis=(Math.sin(TAU*phase+b.ph1)+1)/2;
+    const aMul=config.butterfly.spawnRate+(1-config.butterfly.spawnRate)*vis;
+    const alpha=clamp(config.butterfly.opacity*aMul,0,1);
+    const sp=spriteFor(hueKeyFor(b,idx));
+    ctx.save();
+    ctx.translate(Math.cos(aa)*rr,Math.sin(aa)*rr);
+    ctx.rotate(rot);
+    if(config.butterfly.mirror) ctx.scale(-1,1);
+    ctx.globalAlpha=alpha;
+    ctx.drawImage(sp,-sizePx/2,-sizePx/2,sizePx,sizePx*sy);
+    ctx.restore();
+  }
+  ctx.restore();
+  /* 边界环 */
+  ctx.save();
+  ctx.translate(CX,CY);
+  ctx.beginPath(); ctx.arc(0,0,diskR/config.scene.boundaryRadius,0,TAU);
+  ctx.strokeStyle="rgba(60,50,35,0.55)"; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.restore();
+}
+
+let needLayout=true;
+function frame(t){
+  if(needLayout){layout();needLayout=false;}
+  render(t);
+  requestAnimationFrame(frame);
+}
+function resize(){
+  const st=document.getElementById("stage");
+  W=st.clientWidth; H=st.clientHeight;
+  cv.width=W*devicePixelRatio; cv.height=H*devicePixelRatio;
+  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+  CX=W/2; CY=H/2; diskR=Math.min(W,H)*0.47*config.scene.boundaryRadius*1.04;
+  sprites.clear(); needLayout=true;
+}
+window.addEventListener("resize",()=>{resize();});
+
+/* ---- 控件构建 ---- */
+function slider(parent,label,obj,key,min,max,step,onChange){
+  const row=document.createElement("div"); row.className="row";
+  const lab=document.createElement("label"); lab.textContent=label;
+  const inp=document.createElement("input"); inp.type="range"; inp.min=min; inp.max=max; inp.step=step; inp.value=obj[key];
+  const val=document.createElement("span"); val.className="val"; val.textContent=(+obj[key]).toFixed(step<1?2:0);
+  inp.addEventListener("input",()=>{obj[key]=+inp.value; val.textContent=(+inp.value).toFixed(step<1?2:0); onChange&&onChange();});
+  row.append(lab,inp,val); parent.appendChild(row);
+  return row;
+}
+function check(parent,label,obj,key,onChange){
+  const row=document.createElement("div"); row.className="row";
+  const lab=document.createElement("label"); lab.textContent=label;
+  const inp=document.createElement("input"); inp.type="checkbox"; inp.checked=!!obj[key];
+  inp.addEventListener("change",()=>{obj[key]=inp.checked; onChange&&onChange();});
+  row.append(lab,inp); parent.appendChild(row);
+}
+function select(parent,label,obj,key,opts,onChange){
+  const row=document.createElement("div"); row.className="row";
+  const lab=document.createElement("label"); lab.textContent=label;
+  const sel=document.createElement("select");
+  opts.forEach(([v,t])=>{const o=document.createElement("option");o.value=v;o.textContent=t;sel.appendChild(o);});
+  sel.value=obj[key];
+  sel.addEventListener("change",()=>{obj[key]=sel.value; onChange&&onChange();});
+  row.append(lab,sel); parent.appendChild(row);
+}
+let rebuildT=null;
+function rebuildSprites(){clearTimeout(rebuildT);rebuildT=setTimeout(()=>{sprites.clear();drawNodeEditor();},80);}
+function relayout(){needLayout=true;}
+
+const g1=document.getElementById("sec-global"), g2=document.getElementById("sec-motion"),
+      g3=document.getElementById("sec-wing"), g4=document.getElementById("sec-color");
+slider(g1,"蝴蝶数量",config.scene,"count",8,240,1,relayout);
+slider(g1,"对称阶 p",config.scene,"symmetryP",3,16,1,relayout);
+slider(g1,"对称群 q",config.scene,"symmetryQ",3,16,1,relayout);
+slider(g1,"旋转角度",config.scene,"rotationDeg",0,360,1);
+slider(g1,"边界曲率半径",config.scene,"boundaryRadius",0.55,1,0.01,()=>{resize();relayout();});
+slider(g1,"色相跨度",config.scene,"hueSpread",0,360,1,rebuildSprites);
+select(g1,"颜色分布",config.scene,"colorMode",[["byRing","按环层"],["byAngle","按方位角"],["mixed","混合"],["mono","单色"]],rebuildSprites);
+const bgRow=document.createElement("div");bgRow.className="row";
+bgRow.innerHTML='<label>圆盘底色</label>';
+const bgInp=document.createElement("input");bgInp.type="color";bgInp.value=config.scene.bgColor;
+bgInp.addEventListener("input",()=>{config.scene.bgColor=bgInp.value;});
+bgRow.appendChild(bgInp);g1.appendChild(bgRow);
+
+slider(g2,"蝴蝶大小 %",config.butterfly,"sizePct",0.02,0.05,0.001,relayout);
+slider(g2,"最小像素",config.butterfly,"minPx",32,80,1,relayout);
+slider(g2,"飞行速度",config.butterfly,"speed",0.05,3,0.05);
+slider(g2,"循环时长 s",config.butterfly,"loopDuration",4,60,1);
+slider(g2,"位移范围 px",config.butterfly,"displacement",0,20,0.5);
+slider(g2,"振翅频率",config.butterfly,"flapSpeed",0.2,6,0.1);
+slider(g2,"展开角度°",config.butterfly,"spreadAngle",0,30,1,rebuildSprites);
+slider(g2,"透明度",config.butterfly,"opacity",0.1,1,0.01);
+slider(g2,"出现频率",config.butterfly,"spawnRate",0.1,1,0.01);
+select(g2,"层叠顺序",config.butterfly,"layerOrder",[["outerTop","外层在上"],["innerTop","内层在上"]]);
+check(g2,"镜像翻转",config.butterfly,"mirror");
+
+slider(g3,"翅膀基准角°",config.wing,"angle",-30,30,1,rebuildSprites);
+slider(g3,"翅膀缩放",config.wing,"scale",0.6,1.5,0.01,rebuildSprites);
+slider(g3,"纹理密度",config.wing,"textureDensity",0,1,0.01,rebuildSprites);
+slider(g3,"脉络粗细",config.wing.veins,"width",0.2,2.5,0.1,rebuildSprites);
+check(g3,"脉络显隐",config.wing.veins,"show",rebuildSprites);
+slider(g3,"光影角度°",config.wing.light,"angle",0,360,1,rebuildSprites);
+slider(g3,"光影强度",config.wing.light,"intensity",0,0.8,0.01,rebuildSprites);
+slider(g3,"描边宽度",config.wing,"strokeWidth",0,3,0.1,rebuildSprites);
+
+select(g4,"配色方案",config.color,"scheme",Object.entries(SCHEMES).map(([k,v])=>[k,v.name]),()=>{
+  config.color.stops=SCHEMES[config.color.scheme].stops.map(s=>({...s}));
+  buildStops(); rebuildSprites();
+});
+const stopsBox=document.createElement("div"); g4.appendChild(stopsBox);
+function buildStops(){
+  stopsBox.innerHTML="";
+  config.color.stops.forEach((s,i)=>{
+    const row=document.createElement("div"); row.className="stop";
+    const c=document.createElement("input"); c.type="color"; c.value=s.c;
+    const a=document.createElement("input"); a.type="range"; a.min=0.05; a.max=1; a.step=0.01; a.value=s.a;
+    const av=document.createElement("span"); av.className="t"; av.textContent="α "+(+s.a).toFixed(2);
+    c.addEventListener("input",()=>{s.c=c.value;rebuildSprites();});
+    a.addEventListener("input",()=>{s.a=+a.value;av.textContent="α "+s.a.toFixed(2);rebuildSprites();});
+    const t=document.createElement("span"); t.className="t"; t.textContent="t "+s.t.toFixed(2);
+    row.append(t,c,a,av); stopsBox.appendChild(row);
+  });
+}
+buildStops();
+slider(g4,"反翅色相偏移",config.color,"backHueShift",-90,90,1,rebuildSprites);
+slider(g4,"反翅透明度差",config.color,"backAlpha",-0.4,0.4,0.01,rebuildSprites);
+slider(g4,"反翅明度差",config.color,"backLight",-40,40,1,rebuildSprites);
+const scRow=document.createElement("div");scRow.className="row";
+scRow.innerHTML='<label>描边颜色</label>';
+const scInp=document.createElement("input");scInp.type="color";scInp.value=config.color.strokeColor;
+scInp.addEventListener("input",()=>{config.color.strokeColor=scInp.value;rebuildSprites();});
+scRow.appendChild(scInp);g4.appendChild(scRow);
+
+/* ---- 翅膀节点编辑器 ---- */
+const ncv=document.getElementById("nodeCv"), ng=ncv.getContext("2d");
+let selNode=0, dragging=false;
+const nodeSec=document.getElementById("sec-node");
+document.getElementById("nodeCount").textContent=config.wing.nodes.length;
+function unitToPx(x,y){return [150+x*220, 150-y*220];}
+function pxToUnit(px,py){return [(px-150)/220, -(py-150)/220];}
+function drawNodeEditor(){
+  ng.clearRect(0,0,300,300);
+  ng.strokeStyle="#d8d2c2"; ng.lineWidth=1;
+  ng.beginPath(); ng.moveTo(150,10); ng.lineTo(150,290); ng.moveTo(10,150); ng.lineTo(290,150); ng.stroke();
+  const fore=config.wing.nodes.slice(0,8), hind=config.wing.nodes.slice(8);
+  /* 镜像预览左翅 */
+  [[fore,1],[hind,1],[fore,-1],[hind,-1]].forEach(([ns,side])=>{
+    const m=ns.map(n=>({x:n.x*side,y:n.y,tangent:n.tangent}));
+    tracePath(ng,m,220,0,0,1,1);
+    ng.strokeStyle=side>0?"#4a6b5a":"#c9bfa8"; ng.lineWidth=1.4; ng.stroke();
+    ng.fillStyle="rgba(179,84,46,0.06)"; ng.fill();
+  });
+  config.wing.nodes.forEach((n,i)=>{
+    const [px,py]=unitToPx(n.x,n.y);
+    ng.beginPath(); ng.arc(px,py,i===selNode?6:4,0,TAU);
+    ng.fillStyle=i===selNode?"#b3542e":(i<8?"#4a6b5a":"#7d94a8");
+    ng.fill();
+    if(i===selNode){ng.beginPath();ng.arc(px,py,10,0,TAU);ng.strokeStyle="#b3542e";ng.lineWidth=1.5;ng.stroke();}
+  });
+}
+function nodeSliders(){
+  nodeSec.innerHTML="";
+  const n=config.wing.nodes[selNode];
+  const part=["前翅","后翅"][selNode>=8?1:0];
+  const info=document.createElement("div"); info.className="nodeInfo";
+  info.textContent=`已选中：wing.nodes[${selNode}]（${part} #${selNode%8+1}）`;
+  nodeSec.appendChild(info);
+  slider(nodeSec,"x",n,"x",-0.7,0.7,0.005,drawNodeEditor);
+  slider(nodeSec,"y",n,"y",-0.7,0.7,0.005,drawNodeEditor);
+  slider(nodeSec,"tangent",n,"tangent",0.05,1.2,0.01,()=>{drawNodeEditor();rebuildSprites();});
+}
+nodeSliders();
+function pickNode(px,py){
+  let best=-1,bd=18;
+  config.wing.nodes.forEach((n,i)=>{
+    const [x,y]=unitToPx(n.x,n.y);
+    const d=Math.hypot(x-px,y-py);
+    if(d<bd){bd=d;best=i;}
+  });
+  return best;
+}
+function evPos(e){const r=ncv.getBoundingClientRect();const s=300/r.width;return [(e.clientX-r.left)*s,(e.clientY-r.top)*s];}
+ncv.addEventListener("pointerdown",e=>{
+  const [px,py]=evPos(e);
+  const i=pickNode(px,py);
+  if(i>=0){selNode=i;nodeSliders();drawNodeEditor();dragging=true;ncv.setPointerCapture(e.pointerId);}
+});
+ncv.addEventListener("pointermove",e=>{
+  if(!dragging)return;
+  const [px,py]=evPos(e);
+  const [x,y]=pxToUnit(px,py);
+  const n=config.wing.nodes[selNode];
+  n.x=clamp(+x.toFixed(3),-0.7,0.7); n.y=clamp(+y.toFixed(3),-0.7,0.7);
+  nodeSliders();drawNodeEditor();rebuildSprites();
+});
+ncv.addEventListener("pointerup",()=>dragging=false);
+document.getElementById("resetWing").addEventListener("click",()=>{
+  config.wing.nodes=defaultNodes();sprites.clear();nodeSliders();drawNodeEditor();
+});
+document.getElementById("randomize").addEventListener("click",()=>{
+  const rng=mulberry32(Date.now()&0xffffff);
+  config.wing.nodes.forEach(n=>{
+    n.x=+(n.x*(0.8+rng()*0.5)).toFixed(3);
+    n.y=+(n.y*(0.8+rng()*0.5)).toFixed(3);
+    n.tangent=+(0.3+rng()*0.7).toFixed(2);
+  });
+  sprites.clear();nodeSliders();drawNodeEditor();
+});
+
+window.BUTTERFLY_CONFIG=config;
+resize(); drawNodeEditor();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
