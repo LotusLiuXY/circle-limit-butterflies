@@ -214,8 +214,8 @@ const config = {
     seed: 20260828
   },
   butterfly: {
-    sizePct: 0.038,          // 蝴蝶大小（屏幕宽 2%–5%）
-    minPx: 34,               // 最小像素，确保清晰
+    sizePct: 0.038,          // 蝴蝶大小（屏幕宽 0%–100%，自由设定）
+    minPx: 34,               // 最小像素（0–100，设 0 即不保底，可与 sizePct=0 配合实现从零开始）
     opacity: 0.97,
     speed: 0.5,              // 飞行速度
     loopDuration: 20,        // 循环动画时长（秒）
@@ -322,7 +322,7 @@ function buildTiling(){
 function butterflyPx(s){
   const t=config.tiling;
   return clamp(config.butterfly.sizePct*Math.min(W,H*1.4)*(1-t.shrink+t.shrink*clamp(s,0,1)*1.35),
-               config.butterfly.minPx, 260);
+               config.butterfly.minPx, Math.min(W,H));
 }
 function layout(){
   faces=buildTiling();
@@ -595,12 +595,13 @@ function resize(){
 window.addEventListener("resize",resize);
 
 /* ---------- 控件 ---------- */
-function slider(p,label,obj,key,min,max,step,cb){
+function slider(p,label,obj,key,min,max,step,cb,disp){
   const row=document.createElement("div");row.className="row";
   const l=document.createElement("label");l.textContent=label;
   const i=document.createElement("input");i.type="range";i.min=min;i.max=max;i.step=step;i.value=obj[key];
-  const v=document.createElement("span");v.className="val";v.textContent=fmt(obj[key],step);
-  i.addEventListener("input",()=>{obj[key]=+i.value;v.textContent=fmt(+i.value,step);cb&&cb();});
+  const fmtv=v=>(disp?disp(v):fmt(v,step));
+  const v=document.createElement("span");v.className="val";v.textContent=fmtv(obj[key]);
+  i.addEventListener("input",()=>{obj[key]=+i.value;v.textContent=fmtv(+i.value);cb&&cb();});
   row.append(l,i,v);p.appendChild(row);return row;
 }
 function fmt(x,step){return (+x).toFixed(step<0.05?(step<0.01?3:2):(step<1?2:0));}
@@ -648,7 +649,7 @@ slider(sT,"交替明暗差",config.tiling,"alternateShade",0,60,1,rebuild);
 slider(sT,"边缘留白",config.tiling,"inset",0,0.3,0.01,()=>{resize();relayout();});
 check(sT,"测地线网格",config.tiling.geodesic,"show",redrawBg);
 slider(sT,"网格线宽",config.tiling.geodesic,"width",0.2,3,0.1,redrawBg);
-slider(sT,"网格透明度",config.tiling.geodesic,"opacity",0,0.8,0.01,redrawBg);
+slider(sT,"网格透明度",config.tiling.geodesic,"opacity",0,1,0.01,redrawBg, v=>(v*100).toFixed(0)+"%");
 colorRow(sT,"网格颜色",config.tiling.geodesic,"color",redrawBg);
 check(sT,"面填色",config.tiling.face,"show",redrawBg);
 check(sT,"面交替填色",config.tiling.face,"alternateFill",redrawBg);
@@ -662,15 +663,15 @@ slider(sG,"色相跨度",config.scene,"hueSpread",0,360,1,rebuild);
 select(sG,"颜色分布",config.scene,"colorMode",[["byRing","按环层"],["byAngle","按方位角"],["mixed","混合"],["mono","单色"]],rebuild);
 colorRow(sG,"圆盘底色",config.scene,"bgColor",redrawBg);
 
-slider(sM,"蝴蝶大小 %",config.butterfly,"sizePct",0.02,0.05,0.001,relayout);
-slider(sM,"最小像素",config.butterfly,"minPx",32,90,1,relayout);
+slider(sM,"蝴蝶大小",config.butterfly,"sizePct",0,1,0.001,relayout, v=>(v*100).toFixed(1)+"%");
+slider(sM,"最小像素",config.butterfly,"minPx",0,100,1,relayout);
 slider(sM,"飞行速度",config.butterfly,"speed",0.05,3,0.05);
 slider(sM,"循环时长 s",config.butterfly,"loopDuration",4,60,1);
 slider(sM,"位移范围 px",config.butterfly,"displacement",0,20,0.5);
 slider(sM,"振翅频率",config.butterfly,"flapSpeed",0.2,6,0.1);
 slider(sM,"展开角度°",config.butterfly,"spreadAngle",0,30,1,rebuild);
-slider(sM,"透明度",config.butterfly,"opacity",0.1,1,0.01);
-slider(sM,"出现频率",config.butterfly,"spawnRate",0.1,1,0.01);
+slider(sM,"透明度",config.butterfly,"opacity",0,1,0.01,null, v=>(v*100).toFixed(0)+"%");
+slider(sM,"出现频率",config.butterfly,"spawnRate",0,1,0.01,null, v=>(v*100).toFixed(0)+"%");
 select(sM,"层叠顺序",config.butterfly,"layerOrder",[["smallTop","小在上"],["bigTop","大在上"],["byRing","按环层"]]);
 select(sM,"朝向",config.butterfly,"orient",[["tangent","切向"],["radial","径向"],["mixed","交替"]]);
 check(sM,"镜像翻转",config.butterfly,"mirror");
