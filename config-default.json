@@ -1,0 +1,187 @@
+{
+  "tiling": {
+    "symmetryP": 6,
+    "symmetryQ": 4,
+    "depth": 5,
+    "rotate": 0,
+    "shrink": 0.72,
+    "alternate": true,
+    "alternateShade": 28,
+    "inset": 0.0,
+    "geodesic": {
+      "show": true,
+      "width": 0.6,
+      "opacity": 0.22,
+      "color": "#6b5a3c"
+    },
+    "face": {
+      "show": true,
+      "alternateFill": true,
+      "colors": [
+        "#e6dcc2",
+        "#f4efe2"
+      ]
+    }
+  },
+  "scene": {
+    "count": 200,
+    "boundaryRadius": 0.97,
+    "bgColor": "#efe8d8",
+    "colorMode": "byRing",
+    "hueSpread": 120,
+    "seed": 20260828
+  },
+  "butterfly": {
+    "sizePct": 0.038,
+    "minPx": 34,
+    "opacity": 0.97,
+    "speed": 0.5,
+    "loopDuration": 20,
+    "displacement": 5,
+    "flapSpeed": 1.4,
+    "spreadAngle": 5,
+    "mirror": false,
+    "layerOrder": "smallTop",
+    "spawnRate": 0.9,
+    "orient": "tangent"
+  },
+  "wing": {
+    "angle": -7,
+    "scale": 1.0,
+    "textureDensity": 0.42,
+    "veins": {
+      "show": true,
+      "width": 0.7
+    },
+    "light": {
+      "angle": 128,
+      "intensity": 0.26
+    },
+    "strokeWidth": 1.1,
+    "nodes": [
+      {
+        "x": 0.045,
+        "y": -0.118,
+        "tangent": 0.62
+      },
+      {
+        "x": 0.18,
+        "y": -0.252,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.362,
+        "y": -0.338,
+        "tangent": 0.56
+      },
+      {
+        "x": 0.522,
+        "y": -0.302,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.508,
+        "y": -0.162,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.372,
+        "y": -0.042,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.216,
+        "y": 0.036,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.07,
+        "y": 0.014,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.05,
+        "y": 0.02,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.196,
+        "y": 0.056,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.332,
+        "y": 0.132,
+        "tangent": 0.56
+      },
+      {
+        "x": 0.402,
+        "y": 0.266,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.312,
+        "y": 0.402,
+        "tangent": 0.58
+      },
+      {
+        "x": 0.166,
+        "y": 0.432,
+        "tangent": 0.56
+      },
+      {
+        "x": 0.06,
+        "y": 0.346,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.018,
+        "y": 0.222,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.008,
+        "y": 0.116,
+        "tangent": 0.6
+      },
+      {
+        "x": 0.02,
+        "y": 0.05,
+        "tangent": 0.6
+      }
+    ]
+  },
+  "color": {
+    "stops": [
+      {
+        "t": 0.0,
+        "c": "#fbf6e8",
+        "a": 0.98
+      },
+      {
+        "t": 0.26,
+        "c": "#d9c9a4",
+        "a": 0.97
+      },
+      {
+        "t": 0.52,
+        "c": "#8d7b57",
+        "a": 0.97
+      },
+      {
+        "t": 0.76,
+        "c": "#3d372c",
+        "a": 0.97
+      },
+      {
+        "t": 1.0,
+        "c": "#1a1811",
+        "a": 0.98
+      }
+    ],
+    "backHueShift": 12,
+    "backAlpha": -0.05,
+    "backLight": -10,
+    "strokeColor": "#231f16"
+  }
+}
